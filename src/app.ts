@@ -19,8 +19,7 @@ app.use(bodyParser.json());
 app.use('/auth', routes);
 
 app.get('/', (req, res) => {
-  res.cookie('okok','okok');
-  res.send('Hello World!');
+  res.status(200).send('Hello World!');
 });
 
 app.listen(port, () => {
