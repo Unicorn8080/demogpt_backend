@@ -12,89 +12,97 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ensureLoggedIn = exports.populateCurrentUser = exports.logout = exports.login = void 0;
-const google_auth_library_1 = require("google-auth-library");
+exports.validate = exports.register = exports.login = void 0;
 const user_model_1 = __importDefault(require("../database/models/user.model"));
-const googleClientId = "911588995731-h3sssq8apenpmcnrfiekf5ssugahovvh.apps.googleusercontent.com";
-const client = new google_auth_library_1.OAuth2Client(googleClientId);
-const verify = (token) => {
-    console.log("----------");
-    console.log('token===>', token);
-    return client
-        .verifyIdToken({
-        idToken: token,
-        audience: googleClientId,
-    })
-        .then((ticket) => ticket.getPayload())
-        .then(() => console.log('okokok'));
-};
+const bcrypt_1 = __importDefault(require("bcrypt"));
+const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 function getOrCreateUser(user) {
-    return user_model_1.default.findOne({ googleid: user.googleid }).then((existingUser) => {
+    return user_model_1.default.findOne({ email: user.email }).then((existingUser) => {
         if (existingUser)
             return existingUser;
         const newUser = new user_model_1.default({
             name: user.name,
-            googleid: user.googleid,
+            email: user.email,
+            password: user.password
         });
         return newUser.save();
     });
 }
+function register(req, res) {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            const { name, email, password } = req.body;
+            console.log(name, email, password);
+            const hashedPassword = yield bcrypt_1.default.hash(password, 10);
+            const user = { name, email, password: hashedPassword };
+            yield user_model_1.default.findOne({ email: user.email })
+                .then((existingUser) => {
+                if (existingUser) {
+                    res.status(401).send('You are already registered');
+                }
+                else {
+                    const newUser = new user_model_1.default({
+                        name: user.name,
+                        email: user.email,
+                        password: user.password
+                    });
+                    newUser.save();
+                    res.status(200).send('register successful');
+                }
+            });
+        }
+        catch (error) {
+            console.error(error);
+            res.status(500).json({ error: 'Internal Server Error' });
+        }
+    });
+}
+exports.register = register;
 function login(req, res) {
     return __awaiter(this, void 0, void 0, function* () {
-        // verify(req.body.token.access_token)
-        //   .then((user) => getOrCreateUser(user))
-        //   .then((user) => {
-        //     console.log(`Logged in as ${user.name}`);
-        //     req.session.user = user;
-        //     res.send(user);
-        //   })
-        //   .catch((err) => {
-        //     console.log(`Failed to log in: ${err}`);
-        //     res.status(401).send({ err });
-        //   });
-        // getOrCreateUser(req.body);
-        console.log(req.body.token.access_token);
-        console.log('cookie====>', req.cookies, req.cookies.token, 'd------');
-        const tokenInfo = yield client.getTokenInfo(req.body.token.access_token);
-        console.log(tokenInfo);
-        const verify = tokenInfo ? 'true' : 'false';
-        console.log(verify, "-----------");
-        // const accessToken = JSON.parse(req.body.token).access_token;
-        // console.log(accessToken);
-        const cookieInfo = JSON.stringify(tokenInfo);
-        console.log('😀==', cookieInfo);
-        res.cookie('rememberme', '1', { maxAge: 900000, httpOnly: true });
-        // res.cookie(
-        //   'token',
-        //   // JSON.stringify(tokenInfo),
-        //   'token',
-        //   {
-        //     path: "/auth/login",
-        //     expires: new Date(Date.now() + 80000),
-        //     httpOnly: true,
-        //   }
-        // );
-        res.status(200).send({ "ok": "ok" });
+        try {
+            const { name, email, password } = req.body;
+            const hashedPassword = yield bcrypt_1.default.hash(password, 10);
+            yield user_model_1.default.findOne({ email: email })
+                .then((existingUser) => {
+                if (existingUser) {
+                    const user = { name, email, password: hashedPassword };
+                    const token = jsonwebtoken_1.default.sign(user, 'secretKey');
+                    res.json({ token });
+                }
+                else
+                    res.status(403).send('Invalid User');
+            });
+        }
+        catch (error) {
+            console.error(error);
+            res.status(500).json({ error: 'Internal Server Error' });
+        }
     });
 }
 exports.login = login;
-function logout(req, res) {
-    if (req.user)
-        console.log(`${req.user.name} logged out`);
-    req.session.user = null;
-    res.send({});
+function validate(req, res) {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            console.log("req.body.token");
+            const decoded = jsonwebtoken_1.default.verify(req.body.token, 'secretKey');
+            const expirationTime = decoded.exp;
+            const currentTime = Math.floor(Date.now() / 1000); // Convert to seconds
+            if (expirationTime < currentTime) {
+                console.log('Token has expired');
+                res.status(200).send('successful');
+            }
+            else {
+                console.log('Token is still valid');
+                res.status(200).send('successful');
+            }
+        }
+        catch (error) {
+            console.error(error);
+            res.status(401).send(error);
+            // The token is invalid or has expired
+        }
+    });
 }
-exports.logout = logout;
-function populateCurrentUser(req, res, next) {
-    req.user = req.session.user;
-    next();
-}
-exports.populateCurrentUser = populateCurrentUser;
-function ensureLoggedIn(req, res, next) {
-    if (!req.user) {
-        return res.status(401).send({ err: "not logged in" });
-    }
-    next();
-}
-exports.ensureLoggedIn = ensureLoggedIn;
+exports.validate = validate;
 //# sourceMappingURL=auth.js.map

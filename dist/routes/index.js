@@ -22,24 +22,19 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-const mongoose_1 = __importStar(require("mongoose"));
-const UserSchema = new mongoose_1.Schema({
-    name: { type: String },
-    token: {
-        type: String,
-        required: false,
-        uniqued: false
-    },
-    email: {
-        type: String,
-        uniqued: true,
-    },
-    password: {
-        type: String,
-        uniqued: false,
-    },
-});
-const UserModel = mongoose_1.default.model('user', UserSchema);
-exports.default = UserModel;
-//# sourceMappingURL=user.model.js.map
+const express_1 = __importDefault(require("express"));
+const googleAuth = __importStar(require("../auth/googleauth"));
+const auth = __importStar(require("../auth/auth"));
+const router = express_1.default.Router();
+console.log("😀");
+router.post('/login', googleAuth.login);
+router.post('/register', auth.register);
+router.post('/logout', googleAuth.logout);
+router.post('/login/manual', auth.login);
+router.post('/whoami', auth.validate);
+exports.default = router;
+//# sourceMappingURL=index.js.map
