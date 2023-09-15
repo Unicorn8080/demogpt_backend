@@ -19,8 +19,7 @@ app.use(body_parser_1.default.urlencoded({ extended: true }));
 app.use(body_parser_1.default.json());
 app.use('/auth', routes_1.default);
 app.get('/', (req, res) => {
-    res.cookie('okok', 'okok');
-    res.send('Hello World!');
+    res.status(200).send('Hello World!');
 });
 app.listen(port, () => {
     return console.log(`Express is listening at http://localhost:${port}`);
