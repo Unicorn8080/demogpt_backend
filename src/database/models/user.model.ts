@@ -14,9 +14,13 @@ const UserSchema: Schema<IUser> = new Schema<IUser>({
     uniqued: true,
   },
   password:{
-      type: String,
-      uniqued: false,
+    type: String,
+    uniqued: false,
   },
+  verifyCode:{
+    type: String,
+    required: false
+  }
 });
 
 const UserModel: Model<IUser> = mongoose.model<IUser>('user', UserSchema);

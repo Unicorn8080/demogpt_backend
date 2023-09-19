@@ -3,5 +3,5 @@ export default interface IUser extends Document {
   token?: string;
   email?: string;
   password?: string;
-
+  verifyCode?: string;
 }

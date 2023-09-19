@@ -39,6 +39,10 @@ const UserSchema = new mongoose_1.Schema({
         type: String,
         uniqued: false,
     },
+    verifyCode: {
+        type: String,
+        required: false
+    }
 });
 const UserModel = mongoose_1.default.model('user', UserSchema);
 exports.default = UserModel;
